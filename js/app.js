@@ -2,7 +2,7 @@ class CalorieTracker {
   constructor() {
     this._calorieLimit = Storage.getCalorieLimit();
     this._totalCalories = Storage.getTotalCalories();
-    this._meals = [];
+    this._meals = Storage.getMeals();
     this._workouts = [];
 
     // the below method will only change when the app is reloaded and the set limit has been changed
@@ -19,6 +19,7 @@ class CalorieTracker {
     this._meals.push(meal);
     this._totalCalories += meal.calories;
     Storage.updateTotalCalories(this._totalCalories);
+    Storage.saveMeal(meal);
     this._displayNewMeal(meal);
     this._render();
   }
@@ -67,6 +68,12 @@ class CalorieTracker {
     Storage.setCalorieLimit(calorieLimit);
     this._displayCaloriesLimit();
     this._render();
+  }
+
+  loadItems() {
+    this._meals.forEach(meal => {
+      this._displayNewMeal(meal)
+    })
   }
 
   // Private Methods
@@ -230,9 +237,25 @@ class Storage {
     }
     return totalCalories;
   }
-
+  
   static updateTotalCalories(calories) {
     localStorage.setItem('totalCalories', calories)
+  }
+  
+  static getMeals() {
+    let meals;
+    if(localStorage.getItem('meals') === null){
+      meals = [];
+    } else {
+      meals = JSON.parse(localStorage.getItem('meals'))
+    }
+    return meals;
+  }
+
+  static saveMeal(meal) {
+    const meals = Storage.getMeals();
+    meals.push(meal);
+    localStorage.setItem('meals', JSON.stringify(meals))
   }
 }
 
@@ -241,6 +264,11 @@ class App {
     this._tracker = new CalorieTracker();
 
     // all event listeners go in here
+      this._loadEventListeners();
+      this._tracker.loadItems();
+  }
+
+ _loadEventListeners() {
     document
       .getElementById("meal-form")
       .addEventListener("submit", this._newItem.bind(this, "meal"));
